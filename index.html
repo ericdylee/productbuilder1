@@ -182,6 +182,20 @@
       background-color: #3b82f6;
       color: #fff;
     }
+
+    .comments-card h2 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      letter-spacing: -0.2px;
+    }
+    .comments-card p {
+      margin: 0 0 12px;
+      opacity: 0.8;
+      font-size: 13px;
+    }
+    #disqus_thread {
+      margin-top: 6px;
+    }
   </style>
 </head>
 
@@ -221,6 +235,30 @@
         <button type="submit">구독하기</button>
       </form>
   </div>
+
+  <section class="card comments-card" aria-label="댓글">
+    <h2>💬 댓글</h2>
+    <p>의견을 남겨 주세요. Disqus 계정으로 로그인할 수 있어요.</p>
+    <div id="disqus_thread"></div>
+  </section>
+
+  <script>
+    /**
+    *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+    *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables    */
+    var disqus_config = function () {
+      const canonicalUrl = window.location.href.split("#")[0];
+      this.page.url = canonicalUrl;
+      this.page.identifier = window.location.pathname || canonicalUrl;
+    };
+    (function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = 'https://lotterysubstription.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
 
   <script>
     const $ = (sel) => document.querySelector(sel);
@@ -335,24 +373,5 @@
       }
     });
   </script>
-  <div id="disqus_thread"></div>
-<script>
-    /**
-    *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
-    *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables    */
-    /*
-    var disqus_config = function () {
-    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-    };
-    */
-    (function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = 'https://lotterysubstription.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-    })();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
 </body>
 </html>
