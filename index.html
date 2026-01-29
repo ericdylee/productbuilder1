@@ -21,7 +21,27 @@
       --text: #333;
       --card-bg: rgba(255,255,255,.6);
       --card-border: rgba(0,0,0,.1);
+    }
+    
+    body{
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif;
+      margin:0; padding:24px;
+      min-height:100vh;
+      display:grid; place-items:center;
+      background: var(--bg);
+      color: var(--text);
+    }
 
+    .theme-container{
+      position: fixed;
+      top: 24px;
+      right: 24px;
+    }
+
+    .card{
+      width:min(760px, 100%);
+      border:1px solid var(--card-border);
+      border-radius:18px;
       padding:22px;
       background: var(--card-bg);
       box-shadow: 0 14px 38px rgba(0,0,0,.22);
@@ -42,11 +62,6 @@
       opacity:.9;
     }
     label{ cursor:pointer; }
-
-    .theme-switch{
-      display:flex; align-items:center; gap:8px;
-      opacity:.8;
-    }
 
     .actions{ display:flex; gap:10px; flex-wrap:wrap; }
 
@@ -124,6 +139,10 @@
 </head>
 
 <body>
+  <div class="theme-container">
+    <button id="themeBtn" class="ghost" type="button"></button>
+  </div>
+
   <main class="card">
     <h1>🎲 로또번호 추첨기</h1>
     <p>버튼을 누르면 <b>1~45</b> 사이에서 <b>중복 없이 6개</b> 번호를 뽑아 <b>오름차순</b>으로 보여줍니다.</p>
@@ -135,7 +154,6 @@
       </div>
 
       <div class="actions">
-        <button id="themeBtn" class="ghost" type="button">☀️</button>
         <button id="drawBtn" class="primary" type="button">번호 추첨하기</button>
         <button id="copyBtn" class="ghost" type="button">복사</button>
       </div>
@@ -158,10 +176,10 @@
     function applyTheme(theme) {
       if (theme === 'light') {
         body.classList.add("light-mode");
-        themeBtn.textContent = "🌙";
+        themeBtn.textContent = "Dark Mode";
       } else {
         body.classList.remove("light-mode");
-        themeBtn.textContent = "☀️";
+        themeBtn.textContent = "Light Mode";
       }
     }
 
