@@ -114,9 +114,7 @@
       border: 1px solid rgba(0,0,0,0.08);
     }
 
-    #webcam-container canvas,
-    #webcam-container video,
-    #webcam-container img {
+    #preview img {
       width: 100%;
       height: 100%;
       object-fit: cover;
@@ -157,6 +155,10 @@
       line-height: 1.4;
     }
 
+    .file-input {
+      display: none;
+    }
+
     .pill {
       display: inline-flex;
       align-items: center;
@@ -186,11 +188,12 @@
     <section class="grid">
       <div class="card">
         <h2>촬영/업로드</h2>
-        <div class="preview" id="webcam-container"></div>
+        <div class="preview" id="preview"></div>
         <div class="actions" style="margin-top: 12px;">
-          <button class="primary" id="startBtn" type="button">Start</button>
-          <button class="ghost" id="stopBtn" type="button">카메라 종료</button>
+          <button class="primary" id="uploadBtn" type="button">사진 업로드</button>
+          <button class="ghost" id="resetBtn" type="button">초기화</button>
         </div>
+        <input class="file-input" type="file" id="fileInput" accept="image/*" />
         <div class="status" id="status">모델을 불러오는 중...</div>
       </div>
 
@@ -209,19 +212,16 @@
 
     const statusEl = document.getElementById("status");
     const labelContainer = document.getElementById("label-container");
-    const webcamContainer = document.getElementById("webcam-container");
-    const startBtn = document.getElementById("startBtn");
-    const stopBtn = document.getElementById("stopBtn");
+    const preview = document.getElementById("preview");
+    const uploadBtn = document.getElementById("uploadBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const fileInput = document.getElementById("fileInput");
 
     let model;
-    let webcam;
     let maxPredictions = 0;
-    let animId = null;
-    let started = false;
+    let currentImageUrl = null;
 
     async function init() {
-      if (started) return;
-      started = true;
       statusEl.textContent = "모델 로딩 중...";
 
       const modelURL = URL + "model.json";
@@ -229,54 +229,56 @@
       model = await tmImage.load(modelURL, metadataURL);
       maxPredictions = model.getTotalClasses();
 
-      const flip = true;
-      webcam = new tmImage.Webcam(320, 320, flip);
-      await webcam.setup();
-      await webcam.play();
-      window.requestAnimationFrame(loop);
-
-      webcamContainer.innerHTML = "";
-      webcamContainer.appendChild(webcam.canvas);
-
       labelContainer.innerHTML = "";
       for (let i = 0; i < maxPredictions; i += 1) {
         labelContainer.appendChild(document.createElement("div"));
       }
 
-      statusEl.textContent = "실시간 분석 중";
+      statusEl.textContent = "모델 로딩 완료! 사진을 업로드해 주세요.";
     }
 
-    async function loop() {
-      if (!webcam) return;
-      webcam.update();
-      await predict();
-      animId = window.requestAnimationFrame(loop);
-    }
-
-    async function predict() {
-      if (!model || !webcam) return;
-      const prediction = await model.predict(webcam.canvas);
+    async function predict(imgEl) {
+      if (!model || !imgEl) return;
+      const prediction = await model.predict(imgEl);
       for (let i = 0; i < maxPredictions; i += 1) {
         const classPrediction = `${prediction[i].className}: ${prediction[i].probability.toFixed(2)}`;
         labelContainer.childNodes[i].innerHTML = classPrediction;
       }
     }
 
-    async function stopWebcam() {
-      if (webcam) {
-        webcam.stop();
-        webcam = null;
+    function resetPreview() {
+      preview.innerHTML = "";
+      labelContainer.innerHTML = "";
+      for (let i = 0; i < maxPredictions; i += 1) {
+        labelContainer.appendChild(document.createElement("div"));
       }
-      if (animId) {
-        cancelAnimationFrame(animId);
-        animId = null;
+      if (currentImageUrl) {
+        URL.revokeObjectURL(currentImageUrl);
+        currentImageUrl = null;
       }
-      statusEl.textContent = "카메라가 종료되었습니다.";
-      started = false;
+      statusEl.textContent = "사진을 업로드해 주세요.";
     }
 
-    startBtn.addEventListener("click", init);
-    stopBtn.addEventListener("click", stopWebcam);
+    async function handleFile(file) {
+      if (!file || !model) return;
+      if (currentImageUrl) URL.revokeObjectURL(currentImageUrl);
+      currentImageUrl = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = async () => {
+        preview.innerHTML = "";
+        preview.appendChild(img);
+        statusEl.textContent = "사진 분석 중...";
+        await predict(img);
+        statusEl.textContent = "분석 완료";
+      };
+      img.src = currentImageUrl;
+    }
+
+    uploadBtn.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", (e) => handleFile(e.target.files[0]));
+    resetBtn.addEventListener("click", resetPreview);
+
+    init();
   </script>
 </body>
 </html>
