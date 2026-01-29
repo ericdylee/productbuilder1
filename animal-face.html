@@ -126,6 +126,33 @@
       gap: 10px;
     }
 
+    .result-summary {
+      display: grid;
+      gap: 6px;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.7);
+      font-size: 14px;
+    }
+
+    .result-title {
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .result-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(255, 214, 102, 0.6);
+      border: 1px solid rgba(0,0,0,0.08);
+      width: fit-content;
+    }
+
     .bar {
       height: 12px;
       border-radius: 999px;
@@ -199,6 +226,11 @@
 
       <div class="card">
         <h2>분석 결과</h2>
+        <div class="result-summary" id="result-summary">
+          <div class="result-title">결과를 기다리는 중이에요</div>
+          <div class="result-badge">업로드 후 분석</div>
+          <div class="tip">사진을 넣으면 강아지/고양이 중 더 가까운 쪽을 알려드려요.</div>
+        </div>
         <div class="result" id="label-container"></div>
         <p class="tip">최종 결과는 예측 확률이 높은 쪽을 기준으로 표시됩니다. 조명과 각도에 따라 달라질 수 있어요.</p>
       </div>
@@ -212,6 +244,7 @@
 
     const statusEl = document.getElementById("status");
     const labelContainer = document.getElementById("label-container");
+    const resultSummary = document.getElementById("result-summary");
     const preview = document.getElementById("preview");
     const uploadBtn = document.getElementById("uploadBtn");
     const resetBtn = document.getElementById("resetBtn");
@@ -220,6 +253,19 @@
     let model;
     let maxPredictions = 0;
     let currentImageUrl = null;
+
+    const profileCopy = {
+      dog: {
+        title: "강아지상",
+        badge: "🐶 사교력 만렙",
+        desc: "친근하고 밝은 에너지! 먼저 다가가고 분위기를 살리는 타입이에요. 새로운 사람과도 금방 친해질 확률이 높아요.",
+      },
+      cat: {
+        title: "고양이상",
+        badge: "🐱 은근 매력",
+        desc: "차분하고 섬세한 분위기! 자기 페이스가 확실하고 관찰력이 뛰어난 타입이에요. 가까워지면 깊이 있는 친밀감을 줘요.",
+      },
+    };
 
     async function init() {
       statusEl.textContent = "모델 로딩 중...";
@@ -237,26 +283,68 @@
       statusEl.textContent = "모델 로딩 완료! 사진을 업로드해 주세요.";
     }
 
+    function normalizeClassName(name) {
+      const lower = String(name).toLowerCase();
+      if (lower.includes("dog") || lower.includes("puppy") || lower.includes("강아지")) return "dog";
+      if (lower.includes("cat") || lower.includes("kitten") || lower.includes("고양이")) return "cat";
+      return "other";
+    }
+
+    function renderSummary(winner, dogPercent, catPercent) {
+      if (!winner) {
+        resultSummary.innerHTML = `
+          <div class="result-title">결과를 기다리는 중이에요</div>
+          <div class="result-badge">업로드 후 분석</div>
+          <div class="tip">사진을 넣으면 강아지/고양이 중 더 가까운 쪽을 알려드려요.</div>
+        `;
+        return;
+      }
+      const copy = profileCopy[winner];
+      resultSummary.innerHTML = `
+        <div class="result-title">${copy.title}</div>
+        <div class="result-badge">${copy.badge}</div>
+        <div>${copy.desc}</div>
+        <div class="tip">강아지 ${dogPercent}% · 고양이 ${catPercent}%</div>
+      `;
+    }
+
     async function predict(imgEl) {
       if (!model || !imgEl) return;
       const prediction = await model.predict(imgEl);
-      for (let i = 0; i < maxPredictions; i += 1) {
-        const classPrediction = `${prediction[i].className}: ${prediction[i].probability.toFixed(2)}`;
-        labelContainer.childNodes[i].innerHTML = classPrediction;
-      }
+      labelContainer.innerHTML = "";
+
+      let dogProb = 0;
+      let catProb = 0;
+
+      prediction.forEach((pred) => {
+        const type = normalizeClassName(pred.className);
+        if (type === "dog") dogProb += pred.probability;
+        if (type === "cat") catProb += pred.probability;
+
+        const percent = Math.round(pred.probability * 100);
+        const row = document.createElement("div");
+        row.innerHTML = `
+          <div class="label"><span>${pred.className}</span><span>${percent}%</span></div>
+          <div class="bar"><span style="width:${percent}%"></span></div>
+        `;
+        labelContainer.appendChild(row);
+      });
+
+      const dogPercent = Math.round(dogProb * 100);
+      const catPercent = Math.round(catProb * 100);
+      const winner = dogPercent >= catPercent ? "dog" : "cat";
+      renderSummary(winner, dogPercent, catPercent);
     }
 
     function resetPreview() {
       preview.innerHTML = "";
       labelContainer.innerHTML = "";
-      for (let i = 0; i < maxPredictions; i += 1) {
-        labelContainer.appendChild(document.createElement("div"));
-      }
       if (currentImageUrl) {
         window.URL.revokeObjectURL(currentImageUrl);
         currentImageUrl = null;
       }
       statusEl.textContent = "사진을 업로드해 주세요.";
+      renderSummary(null);
     }
 
     async function handleFile(file) {
