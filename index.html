@@ -1,14 +1,230 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hello World</title>
-  <link href='/style.css' rel='stylesheet'>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>로또번호 추첨기</title>
+  <style>
+    :root { color-scheme: light dark; }
+
+    body{
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif;
+      margin:0; padding:24px;
+      min-height:100vh;
+      display:grid; place-items:center;
+      background: radial-gradient(1200px 600px at 20% 0%, rgba(59,130,246,.18), transparent 60%),
+                  radial-gradient(1000px 600px at 80% 20%, rgba(34,197,94,.14), transparent 60%);
+    }
+
+    .card{
+      width:min(760px, 100%);
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:18px;
+      padding:22px;
+      background: rgba(255,255,255,.06);
+      box-shadow: 0 14px 38px rgba(0,0,0,.22);
+      backdrop-filter: blur(8px);
+    }
+
+    h1{ margin:0 0 8px; font-size:22px; letter-spacing:-.2px; }
+    p{ margin:0 0 18px; opacity:.85; line-height:1.55; }
+
+    .row{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px; flex-wrap:wrap;
+      margin-bottom:14px;
+    }
+
+    .left{
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+      opacity:.9;
+    }
+    label{ cursor:pointer; }
+
+    .actions{ display:flex; gap:10px; flex-wrap:wrap; }
+
+    button{
+      cursor:pointer;
+      border:0;
+      padding:12px 16px;
+      border-radius:12px;
+      font-weight:800;
+      font-size:15px;
+      letter-spacing:-.2px;
+      transition: transform .06s ease, filter .2s ease;
+      box-shadow: 0 10px 22px rgba(0,0,0,.18);
+    }
+    button:active{ transform: translateY(1px); }
+
+    .primary{ background:#3b82f6; color:#fff; }
+    .ghost{
+      background:transparent;
+      color: inherit;
+      border:1px solid rgba(255,255,255,.22);
+      box-shadow:none;
+    }
+    .ghost:hover{ filter:brightness(1.05); }
+
+    .numbers{
+      display:flex; flex-wrap:wrap; gap:10px;
+      padding:16px;
+      border-radius:14px;
+      border:1px dashed rgba(255,255,255,.22);
+      min-height:72px;
+      align-items:center;
+    }
+
+    .ball{
+      width:46px; height:46px;
+      display:grid; place-items:center;
+      border-radius:999px;
+      font-weight:900;
+      font-size:15px;
+      user-select:none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.35),
+                  0 10px 20px rgba(0,0,0,.18);
+      border: 1px solid rgba(255,255,255,.18);
+      color:#111;
+    }
+
+    /* 번호 구간별 컬러(로또 느낌) */
+    .c1{ background: linear-gradient(180deg, #ffe37a, #f7b733); }  /* 1~10 노랑 */
+    .c2{ background: linear-gradient(180deg, #8fd3ff, #2a74ff); color:#fff; } /* 11~20 파랑 */
+    .c3{ background: linear-gradient(180deg, #ff9a9a, #ef4444); color:#fff; } /* 21~30 빨강 */
+    .c4{ background: linear-gradient(180deg, #e5e7eb, #9ca3af); } /* 31~40 회색 */
+    .c5{ background: linear-gradient(180deg, #a7f3d0, #22c55e); } /* 41~45 초록 */
+
+    .sep{
+      opacity:.7;
+      font-weight:900;
+      padding:0 2px;
+    }
+
+    .meta{
+      margin-top:10px;
+      opacity:.8;
+      font-size:13px;
+      line-height:1.4;
+    }
+
+    .hint{
+      opacity:.75;
+      font-size:13px;
+    }
+
+    input[type="checkbox"]{ transform: scale(1.12); }
+  </style>
 </head>
+
 <body>
-  <h1>Hello, world!</h1>
-  <button onclick="console.log('hello');">Press me</button>
-  <script defer type="text/javascript" src="/main.js"></script>
+  <main class="card">
+    <h1>🎲 로또번호 추첨기</h1>
+    <p>버튼을 누르면 <b>1~45</b> 사이에서 <b>중복 없이 6개</b> 번호를 뽑아 <b>오름차순</b>으로 보여줍니다.</p>
+
+    <div class="row">
+      <div class="left">
+        <input id="bonusToggle" type="checkbox" />
+        <label for="bonusToggle">보너스 번호도 추첨</label>
+      </div>
+
+      <div class="actions">
+        <button id="drawBtn" class="primary" type="button">번호 추첨하기</button>
+        <button id="copyBtn" class="ghost" type="button">복사</button>
+      </div>
+    </div>
+
+    <div id="result" class="numbers" aria-live="polite">
+      <span class="hint">아직 추첨 전이에요. 위 버튼을 눌러주세요 🙂</span>
+    </div>
+
+    <div class="meta" id="meta"></div>
+  </main>
+
+  <script>
+    const $ = (sel) => document.querySelector(sel);
+
+    function drawLotto(includeBonus = false) {
+      const pool = Array.from({ length: 45 }, (_, i) => i + 1);
+
+      // Fisher–Yates shuffle
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+
+      const main = pool.slice(0, 6).sort((a, b) => a - b);
+      const bonus = includeBonus ? pool[6] : null;
+      return { main, bonus };
+    }
+
+    // 번호에 따른 색 클래스 반환
+    function colorClass(n) {
+      if (n <= 10) return "c1";
+      if (n <= 20) return "c2";
+      if (n <= 30) return "c3";
+      if (n <= 40) return "c4";
+      return "c5"; // 41~45
+    }
+
+    function makeBall(n) {
+      const ball = document.createElement("div");
+      ball.className = `ball ${colorClass(n)}`;
+      ball.textContent = n;
+      return ball;
+    }
+
+    function render({ main, bonus }) {
+      const result = $("#result");
+      result.innerHTML = "";
+
+      main.forEach((n) => result.appendChild(makeBall(n)));
+
+      if (bonus !== null) {
+        const sep = document.createElement("div");
+        sep.className = "sep";
+        sep.textContent = "+";
+        result.appendChild(sep);
+
+        result.appendChild(makeBall(bonus));
+      }
+
+      const now = new Date();
+      $("#meta").textContent = `추첨 시간: ${now.toLocaleString("ko-KR")}`;
+    }
+
+    function toText({ main, bonus }) {
+      return bonus !== null
+        ? `${main.join(", ")} + 보너스 ${bonus}`
+        : main.join(", ");
+    }
+
+    let last = null;
+
+    $("#drawBtn").addEventListener("click", () => {
+      const includeBonus = $("#bonusToggle").checked;
+      last = drawLotto(includeBonus);
+      render(last);
+    });
+
+    $("#copyBtn").addEventListener("click", async () => {
+      if (!last) {
+        alert("먼저 번호를 추첨해 주세요!");
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(toText(last));
+        alert("클립보드에 복사했어요!");
+      } catch (e) {
+        // fallback
+        const ta = document.createElement("textarea");
+        ta.value = toText(last);
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+        alert("복사했어요!");
+      }
+    });
+  </script>
 </body>
 </html>
