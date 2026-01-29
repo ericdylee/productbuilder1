@@ -208,7 +208,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.16.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
   <script>
-    const URL = "https://teachablemachine.withgoogle.com/models/dMx5eh_TG/";
+    const MODEL_URL = "https://teachablemachine.withgoogle.com/models/dMx5eh_TG/";
 
     const statusEl = document.getElementById("status");
     const labelContainer = document.getElementById("label-container");
@@ -224,8 +224,8 @@
     async function init() {
       statusEl.textContent = "모델 로딩 중...";
 
-      const modelURL = URL + "model.json";
-      const metadataURL = URL + "metadata.json";
+      const modelURL = MODEL_URL + "model.json";
+      const metadataURL = MODEL_URL + "metadata.json";
       model = await tmImage.load(modelURL, metadataURL);
       maxPredictions = model.getTotalClasses();
 
@@ -253,7 +253,7 @@
         labelContainer.appendChild(document.createElement("div"));
       }
       if (currentImageUrl) {
-        URL.revokeObjectURL(currentImageUrl);
+        window.URL.revokeObjectURL(currentImageUrl);
         currentImageUrl = null;
       }
       statusEl.textContent = "사진을 업로드해 주세요.";
@@ -261,8 +261,8 @@
 
     async function handleFile(file) {
       if (!file || !model) return;
-      if (currentImageUrl) URL.revokeObjectURL(currentImageUrl);
-      currentImageUrl = URL.createObjectURL(file);
+      if (currentImageUrl) window.URL.revokeObjectURL(currentImageUrl);
+      currentImageUrl = window.URL.createObjectURL(file);
       const img = new Image();
       img.onload = async () => {
         preview.innerHTML = "";
