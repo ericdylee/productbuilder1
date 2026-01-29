@@ -38,6 +38,17 @@
       right: 24px;
     }
 
+    #themeBtn{
+      background: #fff;
+      color: #000;
+      border: 1px solid rgba(0,0,0,.1);
+    }
+    body.light-mode #themeBtn{
+      background: #000;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.14);
+    }
+
     .card{
       width:min(760px, 100%);
       border:1px solid var(--card-border);
@@ -140,7 +151,7 @@
 
 <body>
   <div class="theme-container">
-    <button id="themeBtn" class="ghost" type="button"></button>
+    <button id="themeBtn" type="button"></button>
   </div>
 
   <main class="card">
@@ -176,10 +187,10 @@
     function applyTheme(theme) {
       if (theme === 'light') {
         body.classList.add("light-mode");
-        themeBtn.textContent = "Dark Mode";
+        themeBtn.textContent = "다크모드";
       } else {
         body.classList.remove("light-mode");
-        themeBtn.textContent = "Light Mode";
+        themeBtn.textContent = "화이트모드";
       }
     }
 
