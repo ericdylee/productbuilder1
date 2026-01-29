@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>동물상 테스트</title>
+  <style>
+    :root {
+      --bg1: #ffefba;
+      --bg2: #ffffff;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --card: rgba(255, 255, 255, 0.8);
+      --border: rgba(0, 0, 0, 0.12);
+      --accent: #ff6b6b;
+      --accent-2: #ffd166;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "NanumSquare", "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      background: radial-gradient(1200px 800px at 10% 10%, var(--bg1), transparent 60%),
+                  linear-gradient(180deg, var(--bg2), #f7fafc 70%);
+      padding: 32px 18px 48px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .wrap {
+      width: min(980px, 100%);
+      display: grid;
+      gap: 18px;
+    }
+
+    header {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: -0.6px;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 14px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.15);
+      transition: transform 0.08s ease, filter 0.2s ease;
+    }
+
+    button:active { transform: translateY(1px); }
+
+    .primary { background: var(--accent); color: #fff; }
+    .ghost { background: #fff; border: 1px solid var(--border); }
+    .accent { background: var(--accent-2); }
+
+    .status {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .preview {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 16px;
+      background: #0f172a;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,0.08);
+    }
+
+    canvas, video, img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .result {
+      display: grid;
+      gap: 10px;
+    }
+
+    .bar {
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #ff9f1c);
+      width: 0%;
+      transition: width 0.25s ease;
+    }
+
+    .label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+
+    .tip {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 640px) {
+      body { padding: 22px 14px 40px; }
+      h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>🐶🐱 동물상 테스트</h1>
+      <p class="subtitle">강아지/고양이 구분 모델로 얼굴 이미지를 분석해 결과를 보여줍니다.</p>
+      <span class="pill">모델: Teachable Machine</span>
+    </header>
+
+    <section class="grid">
+      <div class="card">
+        <h2>촬영/업로드</h2>
+        <div class="preview" id="preview">
+          <canvas id="canvas"></canvas>
+        </div>
+        <div class="actions" style="margin-top: 12px;">
+          <button class="primary" id="startBtn" type="button">카메라 시작</button>
+          <button class="ghost" id="stopBtn" type="button">카메라 종료</button>
+          <button class="accent" id="uploadBtn" type="button">사진 업로드</button>
+        </div>
+        <input class="file-input" type="file" id="fileInput" accept="image/*" />
+        <div class="status" id="status">모델을 불러오는 중...</div>
+      </div>
+
+      <div class="card">
+        <h2>분석 결과</h2>
+        <div class="result" id="result"></div>
+        <p class="tip">최종 결과는 예측 확률이 높은 쪽을 기준으로 표시됩니다. 조명과 각도에 따라 달라질 수 있어요.</p>
+      </div>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.16.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+  <script>
+    const MODEL_URL = "https://teachablemachine.withgoogle.com/models/dMx5eh_TG/";
+
+    const statusEl = document.getElementById("status");
+    const resultEl = document.getElementById("result");
+    const canvas = document.getElementById("canvas");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const uploadBtn = document.getElementById("uploadBtn");
+    const fileInput = document.getElementById("fileInput");
+
+    let model;
+    let webcam;
+    let maxPredictions = 0;
+    let animId = null;
+
+    async function loadModel() {
+      const modelURL = MODEL_URL + "model.json";
+      const metadataURL = MODEL_URL + "metadata.json";
+      model = await tmImage.load(modelURL, metadataURL);
+      maxPredictions = model.getTotalClasses();
+      statusEl.textContent = "모델 로딩 완료! 카메라를 시작하거나 사진을 업로드하세요.";
+      renderEmptyResults();
+    }
+
+    function renderEmptyResults() {
+      resultEl.innerHTML = "";
+      for (let i = 0; i < maxPredictions; i += 1) {
+        const row = document.createElement("div");
+        row.innerHTML = `
+          <div class="label"><span>분석 대기</span><span>0%</span></div>
+          <div class="bar"><span style="width:0%"></span></div>
+        `;
+        resultEl.appendChild(row);
+      }
+    }
+
+    async function startWebcam() {
+      if (!model) return;
+      if (webcam) return;
+      statusEl.textContent = "카메라 준비 중...";
+      webcam = new tmImage.Webcam(320, 320, true);
+      await webcam.setup();
+      await webcam.play();
+      canvas.width = webcam.canvas.width;
+      canvas.height = webcam.canvas.height;
+      statusEl.textContent = "실시간 분석 중";
+      loop();
+    }
+
+    async function stopWebcam() {
+      if (webcam) {
+        webcam.stop();
+        webcam = null;
+      }
+      if (animId) {
+        cancelAnimationFrame(animId);
+        animId = null;
+      }
+      statusEl.textContent = "카메라가 종료되었습니다.";
+    }
+
+    async function loop() {
+      if (!webcam) return;
+      webcam.update();
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(webcam.canvas, 0, 0);
+      await predict(canvas);
+      animId = requestAnimationFrame(loop);
+    }
+
+    async function predict(source) {
+      if (!model) return;
+      const predictions = await model.predict(source, false);
+      resultEl.innerHTML = "";
+      predictions
+        .sort((a, b) => b.probability - a.probability)
+        .forEach((pred) => {
+          const percent = Math.round(pred.probability * 100);
+          const row = document.createElement("div");
+          row.innerHTML = `
+            <div class="label"><span>${pred.className}</span><span>${percent}%</span></div>
+            <div class="bar"><span style="width:${percent}%"></span></div>
+          `;
+          resultEl.appendChild(row);
+        });
+    }
+
+    async function handleFile(file) {
+      if (!file || !model) return;
+      await stopWebcam();
+      const img = new Image();
+      img.onload = async () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        statusEl.textContent = "사진 분석 완료";
+        await predict(canvas);
+      };
+      img.src = URL.createObjectURL(file);
+    }
+
+    startBtn.addEventListener("click", startWebcam);
+    stopBtn.addEventListener("click", stopWebcam);
+    uploadBtn.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", (e) => handleFile(e.target.files[0]));
+
+    loadModel();
+  </script>
+</body>
+</html>
