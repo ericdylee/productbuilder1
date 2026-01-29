@@ -5,23 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>로또번호 추첨기</title>
   <style>
-    :root { color-scheme: light dark; }
+    :root {
+      color-scheme: light dark;
 
-    body{
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif;
-      margin:0; padding:24px;
-      min-height:100vh;
-      display:grid; place-items:center;
-      background: radial-gradient(1200px 600px at 20% 0%, rgba(59,130,246,.18), transparent 60%),
-                  radial-gradient(1000px 600px at 80% 20%, rgba(34,197,94,.14), transparent 60%);
+      --bg: #222;
+      --text: #fff;
+      --card-bg: rgba(255,255,255,.1);
+      --card-border: rgba(255,255,255,.14);
+      --ghost-border: rgba(255,255,255,.22);
+      --ball-text: #111;
     }
 
-    .card{
-      width:min(760px, 100%);
-      border:1px solid rgba(255,255,255,.14);
-      border-radius:18px;
+    body.light-mode {
+      --bg: #f0f0f0;
+      --text: #333;
+      --card-bg: rgba(255,255,255,.6);
+      --card-border: rgba(0,0,0,.1);
+
       padding:22px;
-      background: rgba(255,255,255,.06);
+      background: var(--card-bg);
       box-shadow: 0 14px 38px rgba(0,0,0,.22);
       backdrop-filter: blur(8px);
     }
@@ -40,6 +42,11 @@
       opacity:.9;
     }
     label{ cursor:pointer; }
+
+    .theme-switch{
+      display:flex; align-items:center; gap:8px;
+      opacity:.8;
+    }
 
     .actions{ display:flex; gap:10px; flex-wrap:wrap; }
 
@@ -60,7 +67,7 @@
     .ghost{
       background:transparent;
       color: inherit;
-      border:1px solid rgba(255,255,255,.22);
+      border:1px solid var(--ghost-border);
       box-shadow:none;
     }
     .ghost:hover{ filter:brightness(1.05); }
@@ -69,7 +76,7 @@
       display:flex; flex-wrap:wrap; gap:10px;
       padding:16px;
       border-radius:14px;
-      border:1px dashed rgba(255,255,255,.22);
+      border:1px dashed var(--ghost-border);
       min-height:72px;
       align-items:center;
     }
@@ -84,7 +91,7 @@
       box-shadow: inset 0 1px 0 rgba(255,255,255,.35),
                   0 10px 20px rgba(0,0,0,.18);
       border: 1px solid rgba(255,255,255,.18);
-      color:#111;
+      color: var(--ball-text);
     }
 
     /* 번호 구간별 컬러(로또 느낌) */
@@ -128,6 +135,11 @@
       </div>
 
       <div class="actions">
+        <div class="theme-switch">
+          <span>☀️</span>
+          <input type="checkbox" id="themeToggle" />
+          <span>🌙</span>
+        </div>
         <button id="drawBtn" class="primary" type="button">번호 추첨하기</button>
         <button id="copyBtn" class="ghost" type="button">복사</button>
       </div>
@@ -143,6 +155,33 @@
   <script>
     const $ = (sel) => document.querySelector(sel);
 
+    // Theme Toggle
+    const themeToggle = $("#themeToggle");
+    const body = document.body;
+
+    function applyTheme(theme) {
+      if (theme === 'light') {
+        body.classList.add("light-mode");
+        themeToggle.checked = true;
+      } else {
+        body.classList.remove("light-mode");
+        themeToggle.checked = false;
+      }
+    }
+
+    themeToggle.addEventListener("click", () => {
+      const isLight = themeToggle.checked;
+      const theme = isLight ? 'light' : 'dark';
+      localStorage.setItem("theme", theme);
+      applyTheme(theme);
+    });
+
+    // Apply saved theme on load
+    const savedTheme = localStorage.getItem("theme") || 'dark';
+    applyTheme(savedTheme);
+
+
+    // Lotto App Logic
     function drawLotto(includeBonus = false) {
       const pool = Array.from({ length: 45 }, (_, i) => i + 1);
 
