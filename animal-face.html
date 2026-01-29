@@ -114,7 +114,9 @@
       border: 1px solid rgba(0,0,0,0.08);
     }
 
-    canvas, video, img {
+    #webcam-container canvas,
+    #webcam-container video,
+    #webcam-container img {
       width: 100%;
       height: 100%;
       object-fit: cover;
@@ -155,10 +157,6 @@
       line-height: 1.4;
     }
 
-    .file-input {
-      display: none;
-    }
-
     .pill {
       display: inline-flex;
       align-items: center;
@@ -188,21 +186,17 @@
     <section class="grid">
       <div class="card">
         <h2>촬영/업로드</h2>
-        <div class="preview" id="preview">
-          <canvas id="canvas"></canvas>
-        </div>
+        <div class="preview" id="webcam-container"></div>
         <div class="actions" style="margin-top: 12px;">
-          <button class="primary" id="startBtn" type="button">카메라 시작</button>
+          <button class="primary" id="startBtn" type="button">Start</button>
           <button class="ghost" id="stopBtn" type="button">카메라 종료</button>
-          <button class="accent" id="uploadBtn" type="button">사진 업로드</button>
         </div>
-        <input class="file-input" type="file" id="fileInput" accept="image/*" />
         <div class="status" id="status">모델을 불러오는 중...</div>
       </div>
 
       <div class="card">
         <h2>분석 결과</h2>
-        <div class="result" id="result"></div>
+        <div class="result" id="label-container"></div>
         <p class="tip">최종 결과는 예측 확률이 높은 쪽을 기준으로 표시됩니다. 조명과 각도에 따라 달라질 수 있어요.</p>
       </div>
     </section>
@@ -211,53 +205,61 @@
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.16.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
   <script>
-    const MODEL_URL = "https://teachablemachine.withgoogle.com/models/dMx5eh_TG/";
+    const URL = "https://teachablemachine.withgoogle.com/models/dMx5eh_TG/";
 
     const statusEl = document.getElementById("status");
-    const resultEl = document.getElementById("result");
-    const canvas = document.getElementById("canvas");
+    const labelContainer = document.getElementById("label-container");
+    const webcamContainer = document.getElementById("webcam-container");
     const startBtn = document.getElementById("startBtn");
     const stopBtn = document.getElementById("stopBtn");
-    const uploadBtn = document.getElementById("uploadBtn");
-    const fileInput = document.getElementById("fileInput");
 
     let model;
     let webcam;
     let maxPredictions = 0;
     let animId = null;
+    let started = false;
 
-    async function loadModel() {
-      const modelURL = MODEL_URL + "model.json";
-      const metadataURL = MODEL_URL + "metadata.json";
+    async function init() {
+      if (started) return;
+      started = true;
+      statusEl.textContent = "모델 로딩 중...";
+
+      const modelURL = URL + "model.json";
+      const metadataURL = URL + "metadata.json";
       model = await tmImage.load(modelURL, metadataURL);
       maxPredictions = model.getTotalClasses();
-      statusEl.textContent = "모델 로딩 완료! 카메라를 시작하거나 사진을 업로드하세요.";
-      renderEmptyResults();
-    }
 
-    function renderEmptyResults() {
-      resultEl.innerHTML = "";
-      for (let i = 0; i < maxPredictions; i += 1) {
-        const row = document.createElement("div");
-        row.innerHTML = `
-          <div class="label"><span>분석 대기</span><span>0%</span></div>
-          <div class="bar"><span style="width:0%"></span></div>
-        `;
-        resultEl.appendChild(row);
-      }
-    }
-
-    async function startWebcam() {
-      if (!model) return;
-      if (webcam) return;
-      statusEl.textContent = "카메라 준비 중...";
-      webcam = new tmImage.Webcam(320, 320, true);
+      const flip = true;
+      webcam = new tmImage.Webcam(320, 320, flip);
       await webcam.setup();
       await webcam.play();
-      canvas.width = webcam.canvas.width;
-      canvas.height = webcam.canvas.height;
+      window.requestAnimationFrame(loop);
+
+      webcamContainer.innerHTML = "";
+      webcamContainer.appendChild(webcam.canvas);
+
+      labelContainer.innerHTML = "";
+      for (let i = 0; i < maxPredictions; i += 1) {
+        labelContainer.appendChild(document.createElement("div"));
+      }
+
       statusEl.textContent = "실시간 분석 중";
-      loop();
+    }
+
+    async function loop() {
+      if (!webcam) return;
+      webcam.update();
+      await predict();
+      animId = window.requestAnimationFrame(loop);
+    }
+
+    async function predict() {
+      if (!model || !webcam) return;
+      const prediction = await model.predict(webcam.canvas);
+      for (let i = 0; i < maxPredictions; i += 1) {
+        const classPrediction = `${prediction[i].className}: ${prediction[i].probability.toFixed(2)}`;
+        labelContainer.childNodes[i].innerHTML = classPrediction;
+      }
     }
 
     async function stopWebcam() {
@@ -270,55 +272,11 @@
         animId = null;
       }
       statusEl.textContent = "카메라가 종료되었습니다.";
+      started = false;
     }
 
-    async function loop() {
-      if (!webcam) return;
-      webcam.update();
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(webcam.canvas, 0, 0);
-      await predict(canvas);
-      animId = requestAnimationFrame(loop);
-    }
-
-    async function predict(source) {
-      if (!model) return;
-      const predictions = await model.predict(source, false);
-      resultEl.innerHTML = "";
-      predictions
-        .sort((a, b) => b.probability - a.probability)
-        .forEach((pred) => {
-          const percent = Math.round(pred.probability * 100);
-          const row = document.createElement("div");
-          row.innerHTML = `
-            <div class="label"><span>${pred.className}</span><span>${percent}%</span></div>
-            <div class="bar"><span style="width:${percent}%"></span></div>
-          `;
-          resultEl.appendChild(row);
-        });
-    }
-
-    async function handleFile(file) {
-      if (!file || !model) return;
-      await stopWebcam();
-      const img = new Image();
-      img.onload = async () => {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        statusEl.textContent = "사진 분석 완료";
-        await predict(canvas);
-      };
-      img.src = URL.createObjectURL(file);
-    }
-
-    startBtn.addEventListener("click", startWebcam);
+    startBtn.addEventListener("click", init);
     stopBtn.addEventListener("click", stopWebcam);
-    uploadBtn.addEventListener("click", () => fileInput.click());
-    fileInput.addEventListener("change", (e) => handleFile(e.target.files[0]));
-
-    loadModel();
   </script>
 </body>
 </html>
