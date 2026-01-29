@@ -135,11 +135,7 @@
       </div>
 
       <div class="actions">
-        <div class="theme-switch">
-          <span>☀️</span>
-          <input type="checkbox" id="themeToggle" />
-          <span>🌙</span>
-        </div>
+        <button id="themeBtn" class="ghost" type="button">☀️</button>
         <button id="drawBtn" class="primary" type="button">번호 추첨하기</button>
         <button id="copyBtn" class="ghost" type="button">복사</button>
       </div>
@@ -156,24 +152,24 @@
     const $ = (sel) => document.querySelector(sel);
 
     // Theme Toggle
-    const themeToggle = $("#themeToggle");
+    const themeBtn = $("#themeBtn");
     const body = document.body;
 
     function applyTheme(theme) {
       if (theme === 'light') {
         body.classList.add("light-mode");
-        themeToggle.checked = true;
+        themeBtn.textContent = "🌙";
       } else {
         body.classList.remove("light-mode");
-        themeToggle.checked = false;
+        themeBtn.textContent = "☀️";
       }
     }
 
-    themeToggle.addEventListener("click", () => {
-      const isLight = themeToggle.checked;
-      const theme = isLight ? 'light' : 'dark';
-      localStorage.setItem("theme", theme);
-      applyTheme(theme);
+    themeBtn.addEventListener("click", () => {
+      const currentTheme = body.classList.contains("light-mode") ? 'light' : 'dark';
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+      localStorage.setItem("theme", newTheme);
+      applyTheme(newTheme);
     });
 
     // Apply saved theme on load
