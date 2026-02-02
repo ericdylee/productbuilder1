@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://lotterysubstription.web.app/sitemap.xml
+Sitemap: https://478334c9.productbuilder1-2wa.pages.dev/sitemap.xml
