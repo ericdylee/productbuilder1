@@ -3,7 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>동물상 테스트</title>
+  <title>동물상 테스트 - 나는 강아지상일까, 고양이상일까?</title>
+  <meta name="description" content="얼굴 사진을 업로드하여 인공지능이 당신의 동물상을 분석해줍니다. 강아지상인지 고양이상인지 확인해보세요.">
+  <link rel="canonical" href="https://lotterysubstription.web.app/animal-face.html" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <style>
     :root {
@@ -377,6 +379,7 @@
       if (currentImageUrl) window.URL.revokeObjectURL(currentImageUrl);
       currentImageUrl = window.URL.createObjectURL(file);
       const img = new Image();
+      img.alt = "업로드된 이미지 미리보기";
       img.onload = async () => {
         preview.innerHTML = "";
         preview.appendChild(img);
