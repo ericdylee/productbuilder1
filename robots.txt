@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /animal-face.html
 
 Sitemap: https://productbuilder1-2wa.pages.dev/sitemap.xml
