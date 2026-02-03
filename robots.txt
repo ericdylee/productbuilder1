@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://478334c9.productbuilder1-2wa.pages.dev/sitemap.xml
+Sitemap: https://productbuilder1-2wa.pages.dev/sitemap.xml
